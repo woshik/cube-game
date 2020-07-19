@@ -339,7 +339,6 @@ var HIGHSCORE = {};
 
 // username
 var USERNAME = '';
-var USERNAMELIST = {};
 
 // end game context
 var CANVAS;
@@ -2049,8 +2048,8 @@ function difhash(set, width, height, depth, speed) {
 
 function save_score() {
   var tmp = [];
-  for (var i in HIGHSCORE) {
-    tmp.push(i + '|' + HIGHSCORE[i] + '|' + USERNAME);
+  for (var name in HIGHSCORE) {
+    tmp.push(name + '|' + HIGHSCORE[name].mode + '|' + HIGHSCORE[name].score);
   }
   $.cookie('co_highscore', tmp.join(','), { expires: 10000 });
 }
@@ -2062,8 +2061,10 @@ function load_score() {
     var hs = tmp.split(',');
     for (var i = 0; i < hs.length; ++i) {
       var chunks = hs[i].split('|');
-      HIGHSCORE[chunks[0]] = parseInt(chunks[1]);
-      USERNAMELIST[chunks[0]] = chunks[2] ? chunks[0] : '';
+      HIGHSCORE[chunks[0]] = {
+        mode: chunks[1],
+        score: parseInt(chunks[2]),
+      };
     }
   }
 }
@@ -2071,9 +2072,8 @@ function load_score() {
 function generate_highscores() {
   var tmp = [];
 
-  for (var i in HIGHSCORE) {
-    console.log(i);
-    var chunks = i.split(':');
+  for (var name in HIGHSCORE) {
+    var chunks = HIGHSCORE[name].mode.split(':');
     var dim = chunks[0];
     var s = chunks[1];
     var x = chunks[2];
@@ -2083,7 +2083,7 @@ function generate_highscores() {
     else if (s == 'e') sfull = 'extended';
     var row =
       '<tr><td>' +
-      USERNAMELIST[i] +
+      name +
       '</td><td>' +
       dim +
       '</td><td>' +
@@ -2091,7 +2091,7 @@ function generate_highscores() {
       '</td><td>' +
       x +
       "</td><td class='ths'>" +
-      pretty_number(HIGHSCORE[i]) +
+      pretty_number(HIGHSCORE[name].score) +
       '</td></tr>';
     tmp.push(row);
   }
@@ -2234,14 +2234,19 @@ $(document).ready(function () {
 function showScoreUI() {
   USERNAME = document.getElementById('username').value;
 
+  USERNAME = USERNAME ? USERNAME.toLowerCase() : '';
+
   clearTimeout(ID1);
   clearTimeout(ID2);
 
   var hs = 'Score:';
   var dh = difhash(SET, PIT_WIDTH, PIT_HEIGHT, PIT_DEPTH, SPEED);
-  if (STATE.score > 0 && (HIGHSCORE[dh] == undefined || HIGHSCORE[dh] < STATE.score)) {
-    HIGHSCORE[dh] = STATE.score;
-    USERNAMELIST[dh] = USERNAME;
+  if (STATE.score > 0 && (typeof HIGHSCORE[USERNAME] === 'undefined' || HIGHSCORE[USERNAME].score < STATE.score)) {
+    HIGHSCORE[USERNAME] = {
+      mode: dh,
+      score: STATE.score,
+    };
+
     save_score();
     hs = "<span id='highscore'>New high score:</span>";
   }
